@@ -5,7 +5,7 @@ app = Flask(__name__)
 @app.route("/status", methods=["POST"])
 def status():
     data = request.json
-    print("Recebido:", data)
+    print("📩 Recebido:", data, flush=True)  # 👈 CORREÇÃO
     return jsonify({"message": "OK"}), 200
 
 @app.route("/")
