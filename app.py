@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from datetime import datetime
+from datetime import datetime, timedelta
 
 dados_lojas = {}
 app = Flask(__name__)
@@ -9,7 +9,7 @@ def status():
     data = request.json
 
     loja = data.get("loja")
-    agora = datetime.now().strftime("%H:%M:%S")
+    agora = datetime.utcnow() - timedelta(hours=3)
 
     dados_lojas[loja] = {
         "dados": data.get("dados"),
@@ -23,7 +23,7 @@ def status():
 
 @app.route("/painel")
 def painel():
-    html = "<h1>Monitoramento CONCENTRADORES</h1>"
+    html = "<h1>Monitoramento Concentradores</h1>"
 
     for loja, info in dados_lojas.items():
         status = "🟢 ONLINE" if info["dados"]["ativo"] else "🔴 OFFLINE"
