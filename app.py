@@ -23,7 +23,7 @@ def status():
 
 @app.route("/painel")
 def painel():
-    html = "<h1>Painel de Monitoramento</h1>"
+    html = "<h1>Monitoramento CONCENTRADORES</h1>"
 
     for loja, info in dados_lojas.items():
         status = "🟢 ONLINE" if info["dados"]["ativo"] else "🔴 OFFLINE"
