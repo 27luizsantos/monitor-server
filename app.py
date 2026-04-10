@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
-
+lojas_alerta = {}
 dados_lojas = {}
 app = Flask(__name__)
 
@@ -14,6 +14,15 @@ def status():
         "dados": data.get("dados"),
         "ultima_atualizacao": agora
     }
+
+    # 🔥 CONTROLE DE ALERTA
+    if loja not in lojas_alerta:
+        lojas_alerta[loja] = {
+            "ultimo_status": time.time(),
+            "alerta_enviado": False
+        }
+
+    lojas_alerta[loja]["ultimo_status"] = time.time()
 
     print("📩 Recebido:", data, flush=True)
     return jsonify({"message": "OK"}), 200
@@ -208,6 +217,27 @@ def painel():
 
     return html
 
+def monitorar_lojas():
+    while True:
+        agora = time.time()
 
+        for loja, info in lojas_alerta.items():
+            tempo = agora - info["ultimo_status"]
+
+            # 🚨 OFFLINE
+            if tempo > 120:
+                if not info["alerta_enviado"]:
+                    enviar_alerta(f"🚨 {loja} OFFLINE")
+                    info["alerta_enviado"] = True
+
+            # ✅ VOLTOU
+            else:
+                if info["alerta_enviado"]:
+                    enviar_alerta(f"✅ {loja} VOLTOU")
+                    info["alerta_enviado"] = False
+
+        time.sleep(10)
+        
 if __name__ == "__main__":
+    threading.Thread(target=monitorar_lojas, daemon=True).start()
     app.run(host="0.0.0.0", port=10000)
