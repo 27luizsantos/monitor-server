@@ -237,7 +237,7 @@ def monitorar_lojas():
             for loja, info in items:
                 tempo = agora - info["ultimo_status"]
 
-                if tempo > 120:
+                if tempo > 5:
                     if not info["alerta_enviado"]:
                         enviar_alerta(f"🚨 {loja} está OFFLINE há {int(tempo)}s")
                         with lock:
