@@ -182,7 +182,7 @@ def monitorar():
                         lojas_alertadas[loja] = False
         except Exception as e:
             print(f"Erro no monitor: {e}", flush=True)
-
+        print("monitorando...", flush=True)
         time.sleep(10)
 
 
