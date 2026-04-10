@@ -193,7 +193,7 @@ def painel():
 </head>
 <body>
     <div class="topbar">
-        <h1><span>SO OFERTAS</span> &middot; Monitoramento VR</h1>
+        <h1><span>SO OFERTAS</span> &middot; Monitoramento VR-Concentrador</h1>
         <div class="summary">
             <span class="pill total">{total} lojas</span>
             <span class="pill up">{online} online</span>
