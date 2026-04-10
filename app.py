@@ -1,5 +1,7 @@
 from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
+import threading
+import time
 lojas_alerta = {}
 dados_lojas = {}
 app = Flask(__name__)
