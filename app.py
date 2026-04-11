@@ -1,39 +1,39 @@
 from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
-from threading import Thread, Lock
-import requests
-import time
 
-lock = Lock()
-lojas_alertadas = {}
 dados_lojas = {}
 app = Flask(__name__)
+
+
+
+import requests
 
 TOKEN = "8630570120:AAHUTphBpCTBOghKEGHRm-Z8nYQVB7vvhXA"
 CHAT_ID = "8523564012"
 
-def enviar_alerta(loja, status):
-    mensagem = f"🚨 {loja} - {status}"
+def enviar_telegram(msg):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    try:
-        requests.post(url, json={
-            "chat_id": CHAT_ID,
-            "text": mensagem
-        })
-    except:
-        pass
+    
+    requests.post(url, json={
+        "chat_id": CHAT_ID,
+        "text": msg
+    })
 
 @app.route("/status", methods=["POST"])
 def status():
     data = request.json
     loja = data.get("loja")
+    if status == "offline":
+        enviar_telegram(f"🚨 {loja} está OFFLINE")
+
+    return jsonify({"ok": True})
+
     agora = datetime.utcnow() - timedelta(hours=3)
 
-    with lock:
-        dados_lojas[loja] = {
-            "dados": data.get("dados"),
-            "ultima_atualizacao": agora
-        }
+    dados_lojas[loja] = {
+        "dados": data.get("dados"),
+        "ultima_atualizacao": agora
+    }
 
     print("📩 Recebido:", data, flush=True)
     return jsonify({"message": "OK"}), 200
@@ -42,22 +42,18 @@ def status():
 @app.route("/painel")
 def painel():
     agora = datetime.utcnow() - timedelta(hours=3)
-
-    with lock:
-        snapshot = dict(dados_lojas)
-
-    total = len(snapshot)
-    online = sum(1 for info in snapshot.values() if info["dados"].get("ativo"))
+    total = len(dados_lojas)
+    online = sum(1 for info in dados_lojas.values() if info["dados"].get("ativo"))
     offline = total - online
 
     cards = ""
-    for loja, info in sorted(snapshot.items()):
+    for loja, info in sorted(dados_lojas.items()):
         ativo = info["dados"].get("ativo", False)
         processo = info["dados"].get("processo", False)
         porta = info["dados"].get("porta", False)
         ultima = info["ultima_atualizacao"]
         diff = (agora - ultima).total_seconds()
-        desatualizado = diff > 120
+        desatualizado = diff > 120  # mais de 2 min sem atualizar
 
         if not ativo:
             status_class = "offline"
@@ -73,119 +69,165 @@ def painel():
             dot = "🟢"
 
         tempo_str = ultima.strftime("%d/%m/%Y %H:%M:%S")
-        proc_icon = "✔" if processo else "✘"
-        proc_class = "check" if processo else "cross"
-        porta_icon = "✔" if porta else "✘"
-        porta_class = "check" if porta else "cross"
 
         cards += f"""
         <div class="card {status_class}">
-            <div class="status-badge">
-                <span>{dot}</span>
-                <span>{status_text}</span>
+            <div class="card-header">
+                <span class="dot">{dot}</span>
+                <span class="status-badge {status_class}">{status_text}</span>
             </div>
-            <h2>{loja}</h2>
+            <h3>{loja}</h3>
             <div class="details">
-                <div class="detail-item">
+                <div class="detail-row">
                     <span>Processo</span>
-                    <span class="{proc_class}">{proc_icon}</span>
+                    <span class="{'ok' if processo else 'fail'}">{'✔' if processo else '✘'}</span>
                 </div>
-                <div class="detail-item">
+                <div class="detail-row">
                     <span>Porta</span>
-                    <span class="{porta_class}">{porta_icon}</span>
+                    <span class="{'ok' if porta else 'fail'}">{'✔' if porta else '✘'}</span>
                 </div>
             </div>
             <p class="timestamp">Atualizado: {tempo_str}</p>
         </div>
         """
 
-    if not snapshot:
-        cards = '<p style="text-align:center;color:#aaa;grid-column:1/-1;">Nenhuma loja enviou dados ainda. Aguardando conexões...</p>'
+    if not dados_lojas:
+        cards = '<div class="empty">Nenhuma loja enviou dados ainda. Aguardando conexões...</div>'
 
-    html = f"""
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="refresh" content="15">
-        <title>Monitoramento VR</title>
-        <style>
-            * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-            body {{ font-family: 'Segoe UI', sans-serif; background: #0f1117; color: #e0e0e0; padding: 20px; }}
-            .header {{ text-align: center; margin-bottom: 30px; }}
-            .header h1 {{ font-size: 1.6rem; color: #fff; }}
-            .summary {{ display: flex; justify-content: center; gap: 20px; margin-top: 10px; }}
-            .summary span {{ padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }}
-            .summary .total {{ background: #1e1e2e; color: #ccc; }}
-            .summary .on {{ background: #0d3320; color: #4ade80; }}
-            .summary .off {{ background: #3b1111; color: #f87171; }}
-            .grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }}
-            .card {{ background: #1a1a2e; border-radius: 12px; padding: 20px; border-left: 4px solid #555; transition: transform 0.2s; }}
-            .card:hover {{ transform: translateY(-3px); }}
-            .card.online {{ border-left-color: #4ade80; }}
-            .card.offline {{ border-left-color: #f87171; }}
-            .card.warning {{ border-left-color: #facc15; }}
-            .status-badge {{ display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 700; font-size: 0.9rem; }}
-            .card h2 {{ font-size: 1rem; color: #fff; margin-bottom: 12px; }}
-            .details {{ display: flex; gap: 16px; margin-bottom: 10px; }}
-            .detail-item {{ display: flex; flex-direction: column; align-items: center; font-size: 0.8rem; gap: 2px; }}
-            .check {{ color: #4ade80; font-weight: bold; }}
-            .cross {{ color: #f87171; font-weight: bold; }}
-            .timestamp {{ font-size: 0.75rem; color: #888; }}
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <h1>SO OFERTAS · Monitoramento VR-Concentrador</h1>
-            <div class="summary">
-                <span class="total">{total} lojas</span>
-                <span class="on">{online} online</span>
-                <span class="off">{offline} offline</span>
-            </div>
+    html = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="15">
+    <title>Monitoramento VR-Concentrador - Só Ofertas</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0f1117;
+            color: #e1e4e8;
+            min-height: 100vh;
+        }}
+        .topbar {{
+            background: linear-gradient(135deg, #1a1d27 0%, #22262f 100%);
+            border-bottom: 1px solid #2d3139;
+            padding: 20px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }}
+        .topbar h1 {{
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+        }}
+        .topbar h1 span {{ color: #3b82f6; }}
+        .summary {{
+            display: flex;
+            gap: 16px;
+            font-size: 0.85rem;
+        }}
+        .summary .pill {{
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+        }}
+        .pill.total {{ background: #23272f; color: #94a3b8; }}
+        .pill.up {{ background: #0d3320; color: #4ade80; }}
+        .pill.down {{ background: #3b1219; color: #f87171; }}
+        .grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            padding: 24px 32px;
+        }}
+        .card {{
+            background: #1a1d27;
+            border: 1px solid #2d3139;
+            border-radius: 12px;
+            padding: 20px;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }}
+        .card:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }}
+        .card.online {{ border-left: 4px solid #4ade80; }}
+        .card.offline {{ border-left: 4px solid #f87171; }}
+        .card.warning {{ border-left: 4px solid #facc15; }}
+        .card-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }}
+        .dot {{ font-size: 1rem; }}
+        .status-badge {{
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }}
+        .status-badge.online {{ background: #0d3320; color: #4ade80; }}
+        .status-badge.offline {{ background: #3b1219; color: #f87171; }}
+        .status-badge.warning {{ background: #3b2f08; color: #facc15; }}
+        .card h3 {{
+            font-size: 1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 14px;
+        }}
+        .details {{
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+        }}
+        .detail-row {{
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            color: #94a3b8;
+        }}
+        .ok {{ color: #4ade80; font-weight: 700; }}
+        .fail {{ color: #f87171; font-weight: 700; }}
+        .timestamp {{
+            font-size: 0.72rem;
+            color: #4b5563;
+            border-top: 1px solid #2d3139;
+            padding-top: 10px;
+        }}
+        .empty {{
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            color: #4b5563;
+            font-size: 1rem;
+        }}
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <h1><span>SO OFERTAS</span> &middot; Monitoramento VR-Concentrador</h1>
+        <div class="summary">
+            <span class="pill total">{total} lojas</span>
+            <span class="pill up">{online} online</span>
+            <span class="pill down">{offline} offline</span>
         </div>
-        <div class="grid">
-            {cards}
-        </div>
-    </body>
-    </html>
-    """
+    </div>
+    <div class="grid">
+        {cards}
+    </div>
+</body>
+</html>"""
 
     return html
 
 
-def monitorar():
-    while True:
-        try:
-            agora = datetime.utcnow() - timedelta(hours=3)
-
-            with lock:
-                items = list(dados_lojas.items())
-
-            for loja, info in items:
-                ultima = info["ultima_atualizacao"]
-                diff = (agora - ultima).total_seconds()
-                ativo = info["dados"].get("ativo", False)
-
-                if not ativo:
-                    if not lojas_alertadas.get(loja):
-                        enviar_alerta(loja, "OFFLINE")
-                        lojas_alertadas[loja] = True
-
-                elif diff > 120:
-                    if not lojas_alertadas.get(loja):
-                        enviar_alerta(loja, "SEM RESPOSTA")
-                        lojas_alertadas[loja] = True
-
-                else:
-                    if lojas_alertadas.get(loja):
-                        enviar_alerta(loja, "VOLTOU")
-                        lojas_alertadas[loja] = False
-        except Exception as e:
-            print(f"Erro no monitor: {e}", flush=True)
-        print("monitorando...", flush=True)
-        time.sleep(10)
-
-
 if __name__ == "__main__":
-    Thread(target=monitorar, daemon=True).start()
     app.run(host="0.0.0.0", port=10000)
