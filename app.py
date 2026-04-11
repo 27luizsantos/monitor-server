@@ -6,7 +6,7 @@ dados_lojas = {}
 app = Flask(__name__)
 
 LOJAS_ESPERADAS = [
-    "BRAGANÇA 1","BRAGANÇA 2"
+    "BRAGANÇA 1","BRAGANÇA 2",
     "VALINHOS 07","VALINHOS 04",
     "ITATIBA", "JOÃO PAULO", "COSMOPOLIS",
     "BARAO GERALDO","JUNDIAÍ","SUMARÉ 1","SUMARÉ 02",
