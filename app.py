@@ -28,11 +28,18 @@ def status():
 
     ativo = dados.get("ativo", True)
 
-    # 🚨 ALERTA SIMPLES
-    if not ativo:
+    agora = datetime.utcnow() - timedelta(hours=3)
+
+    # 🔑 pega status anterior
+    ultimo_status = dados_lojas.get(loja, {}).get("dados", {}).get("ativo", True)
+
+    # 🚨 ALERTA SOMENTE SE MUDAR DE ONLINE → OFFLINE
+    if ultimo_status and not ativo:
         enviar_telegram(f"🚨 {loja} está OFFLINE")
 
-    agora = datetime.utcnow() - timedelta(hours=3)
+    # (opcional) voltou ao normal
+    if not ultimo_status and ativo:
+        enviar_telegram(f"✅ {loja} voltou ONLINE")
 
     dados_lojas[loja] = {
         "dados": dados,
