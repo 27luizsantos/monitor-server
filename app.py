@@ -254,14 +254,17 @@ def painel():
             <span class="pill up">{online} online</span>
             <span class="pill down">{offline} offline</span>
         </div>
+   
+    <div class="grid">
+        {cards}
+    </div>
+
     </div>
     <div style="padding: 20px 32px;">
     <h2 style="margin-bottom: 10px;">Lojas Monitoradas</h2>
     {lista_lojas_html}
     </div>
-    <div class="grid">
-        {cards}
-    </div>
+
 </body>
 </html>"""
 
