@@ -1,12 +1,13 @@
 from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
+import requests
 
 dados_lojas = {}
 app = Flask(__name__)
 
 
 
-import requests
+
 
 TOKEN = "8630570120:AAHUTphBpCTBOghKEGHRm-Z8nYQVB7vvhXA"
 CHAT_ID = "8523564012"
@@ -23,19 +24,23 @@ def enviar_telegram(msg):
 def status():
     data = request.json
     loja = data.get("loja")
-    if status == "offline":
-        enviar_telegram(f"🚨 {loja} está OFFLINE")
+    dados = data.get("dados", {})
 
-    return jsonify({"ok": True})
+    ativo = dados.get("ativo", True)
+
+    # 🚨 ALERTA SIMPLES
+    if not ativo:
+        enviar_telegram(f"🚨 {loja} está OFFLINE")
 
     agora = datetime.utcnow() - timedelta(hours=3)
 
     dados_lojas[loja] = {
-        "dados": data.get("dados"),
+        "dados": dados,
         "ultima_atualizacao": agora
     }
 
     print("📩 Recebido:", data, flush=True)
+
     return jsonify({"message": "OK"}), 200
 
 
