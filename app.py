@@ -195,7 +195,7 @@ def painel():
     <body>
         <div class="container">
             <h1>⚡ Monitoramento VR-Concentrador</h1>
-            <div class="subtitle">Atualização automática a cada 30s</div>
+            <div class="subtitle">GURUTECH - suporte/Grupo SÓ OFERTAS</div>
 
             <div class="stats">
                 <div class="stat stat-total">
