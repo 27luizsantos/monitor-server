@@ -194,7 +194,7 @@ def painel():
     </head>
     <body>
         <div class="container">
-            <h1>⚡ Monitoramento VR</h1>
+            <h1>⚡ Monitoramento VR-Concentrador</h1>
             <div class="subtitle">Atualização automática a cada 30s</div>
 
             <div class="stats">
