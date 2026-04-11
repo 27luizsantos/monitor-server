@@ -5,6 +5,14 @@ import requests
 dados_lojas = {}
 app = Flask(__name__)
 
+LOJAS_ESPERADAS = [
+    "BRAGANÇA 1",
+    "VALINHOS 07","VALINHOS 04",
+    "ITATIBA", "JOÃO PAULO", "COSMOPOLIS",
+    "BARÃO GERALDO","JUNDIAÍ","SUMARÉ 1","SUMARÉ 02",
+    "ELOY CHAVES","ELÍSIO","PAULINIA","JACARÉ"
+]
+
 
 
 
@@ -59,6 +67,21 @@ def painel():
     offline = total - online
 
     cards = ""
+    lista_lojas_html = ""
+
+    for loja in LOJAS_ESPERADAS:
+        if loja in dados_lojas:
+            cor = "#4ade80"  # verde
+        else:
+            cor = "#f87171"  # vermelho
+
+        lista_lojas_html += f"""
+        <div style="color: {cor}; font-weight: 600;">
+            {loja}
+        </div>
+        """
+
+
     for loja, info in sorted(dados_lojas.items()):
         ativo = info["dados"].get("ativo", False)
         processo = info["dados"].get("processo", False)
@@ -231,6 +254,10 @@ def painel():
             <span class="pill up">{online} online</span>
             <span class="pill down">{offline} offline</span>
         </div>
+    </div>
+    <div style="padding: 20px 32px;">
+    <h2 style="margin-bottom: 10px;">Lojas Monitoradas</h2>
+    {lista_lojas_html}
     </div>
     <div class="grid">
         {cards}
