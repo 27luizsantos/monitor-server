@@ -13,8 +13,8 @@ LOJAS_ESPERADAS = [
     "ELOY CHAVES","ELÍSIO","PAULINIA","JACARÉ"
 ]
 
-TOKEN = "SEU_TOKEN"
-CHAT_ID = "SEU_CHAT_ID"
+TOKEN = "8630570120:AAHUTphBpCTBOghKEGHRm-Z8nYQVB7vvhXA"
+CHAT_ID = "8523564012"
 
 def enviar_telegram(msg):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
