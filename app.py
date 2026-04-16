@@ -86,7 +86,7 @@ def painel():
         ultima = info["ultima_atualizacao"]
 
         diff = (agora - ultima).total_seconds()
-        desatualizado = diff > 120
+        desatualizado = diff > 60
 
         if not ativo:
             status_text = "OFFLINE"
